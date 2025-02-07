@@ -30,7 +30,7 @@ func Read() (Config, error){
 	
 }
 
-func SetUser(c Config, userName string) error {
+func SetUser(c *Config, userName string) error {
 	c.CurrentUserName = userName
 	fileContent, err := json.Marshal(c)
 	if err != nil{
