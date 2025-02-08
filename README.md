@@ -23,21 +23,21 @@ Once set up, you can run Gator via the command line. Below are the available com
 ### Commands Overview
 
 1. **`gator login`**
-   - Logs a user into the application. This command prompts for credentials.
+   - Logs a user into the application.
    - Example:  
      ```bash
-     gator login
+     gator login <username>
      ```
 
 2. **`gator register`**
    - Registers a new user with the system.
    - Example:  
      ```bash
-     gator register
+     gator register <username>
      ```
 
 3. **`gator reset`**
-   - Resets your application's settings or database to its initial state.
+   - Resets your application's settings or database to its initial state. Use with caution!
    - Example:  
      ```bash
      gator reset
@@ -51,17 +51,17 @@ Once set up, you can run Gator via the command line. Below are the available com
      ```
 
 5. **`gator agg`**
-   - A command to perform some aggregate function (be sure to elaborate what `agg` does in your project!).
+   - Agg fetches the feed which hasn't been fetched for the longest time and saves all posts from the feed to the database. Note that only feeds the logged in user is following are considered.
    - Example:  
      ```bash
-     gator agg
+     gator agg <interval>
      ```
 
 6. **`gator addfeed`**
-   - Adds a new feed for the logged-in user. This command requires the user to be logged in.
+   - Adds a new feed by url for the logged-in user. 
    - Example:  
      ```bash
-     gator addfeed
+     gator addfeed <feed_url>
      ```
 
 7. **`gator feeds`**
@@ -72,7 +72,7 @@ Once set up, you can run Gator via the command line. Below are the available com
      ```
 
 8. **`gator follow`**
-   - Allows a logged-in user to follow a particular feed.
+   - Allows a logged-in user to follow a particular feed. This is automatically called for the current user if he is adding a new feed.
    - Example:  
      ```bash
      gator follow <feed_name>
@@ -96,7 +96,7 @@ Once set up, you can run Gator via the command line. Below are the available com
     - Allows the logged in user to list his N most recently published Posts from the followed Feeds.
     - Example:  
       ```bash
-      gator explore 20
+      gator explore <N>
       ```
 
 12. **`gator posts`**
