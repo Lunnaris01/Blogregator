@@ -16,7 +16,7 @@ Install the `gator` CLI using the `go install` command:
 
 ```bash
 go install github.com/Lunnaris01/Blogregator/cmd/gator@latest
-
+```
 ## Usage
 Once set up, you can run Gator via the command line. Below are the available commands and their descriptions:
 
