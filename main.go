@@ -36,7 +36,7 @@ func main(){
 	cmds.Register("follow" , commands.MiddlewareLoggedIn(commands.HandlerFollowFeed))
 	cmds.Register("following" , commands.MiddlewareLoggedIn(commands.HandlerFollowing))
 	cmds.Register("unfollow" , commands.MiddlewareLoggedIn(commands.HandlerUnFollowFeed))
-
+	//cmds.Register("scrapefeed", commands.HandlerscrapeFeeds)
 	args := os.Args[1:]
 	if len(args) <1 {
 		log.Fatalf("Error: Missing command")

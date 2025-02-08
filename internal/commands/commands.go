@@ -12,8 +12,9 @@ import (
 	"net/http"
 	"os"
 	"time"
-
+	"database/sql"
 	"github.com/google/uuid"
+	"strconv"
 )
 
 // Define state for handlers
@@ -132,13 +133,30 @@ func HandlerReset(s *State, cmd Command) error {
 }
 
 func HandlerAgg(s *State, cmd Command) error {
-	new_context := context.Background()
-	cheat_url := "https://www.wagslane.dev/index.xml"
-	rssfeed, err := fetchFeed(new_context, cheat_url)
-	if err != nil {
-		return fmt.Errorf("Failed to fetch content: %v", err)
+	if len(cmd.Args) < 1 {
+		return errors.New("A valid time duration is needed!")
 	}
-	fmt.Printf("%#v\n", rssfeed)
+	time_as_int, err  := strconv.Atoi(cmd.Args[0])
+	if err != nil || time_as_int<15 || time_as_int>60 {
+		return errors.New("Choose an update duration between 15 and 60 seconds!")	
+	}
+	ticker := time.NewTicker(time.Second)
+	counter := 0
+	fmt.Printf("Collecting feeds every %d seconds\n", time_as_int)
+	for ; ; <- ticker.C{
+		if counter < time_as_int{
+			counter++
+			if counter %5 == 0{
+				fmt.Printf("Next update in %d Seconds\n",time_as_int-counter)
+			}
+			continue
+		}
+		err := scrapeFeeds(s, cmd)
+		if err != nil {
+			return fmt.Errorf("Failure during update: %v", err)
+		}
+		counter= 0
+	}
 	return nil
 }
 
@@ -236,7 +254,7 @@ func HandlerFollowing(s *State, cmd Command, user database.User) error {
 
 	followed_feeds, err := s.Db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
-		fmt.Printf("Failed read followed Feeds")
+		fmt.Printf("Failed to fetch Feeds")
 		os.Exit(1)
 	}
 	fmt.Printf("User %s is following these feeds:\n", user.Name)
@@ -245,6 +263,7 @@ func HandlerFollowing(s *State, cmd Command, user database.User) error {
 	}
 	return nil
 }
+
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	rssfeed := RSSFeed{}
@@ -311,4 +330,40 @@ func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) 
 
 	}
 
+}
+
+func scrapeFeeds(s *State, cmd Command) error {
+	feed, err := s.Db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+	fetched_feed,err := fetchFeed(context.Background(),feed.Url)
+	if err != nil {
+		return err
+	}
+	err = s.Db.MarkFeedFetched(
+		context.Background(),
+		database.MarkFeedFetchedParams{
+			ID:				feed.ID,
+			UpdatedAt:	time.Now(),
+			LastFetchedAt: sql.NullTime{
+				Time: 	time.Now(),
+				Valid: 	true,
+				},
+			})
+	if err != nil {
+		return err
+	}
+	
+	printFeed(fetched_feed)
+	fmt.Println("Feed Updated")
+	return nil
+}
+
+func printFeed(feed *RSSFeed){
+	fmt.Printf("Title: %s\n",feed.Channel.Title)
+	for _, item := range feed.Channel.Item{
+		fmt.Printf("Title: %s\n",item.Title)
+		fmt.Printf("Description: %s\n",item.Description)
+	}
 }
