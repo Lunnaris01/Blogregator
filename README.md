@@ -12,7 +12,7 @@ To run this program, you'll need:
 - **Go** installed. For installation instructions, visit [the official Go documentation](https://go.dev/doc/install).
 
 ## Installation
-Install the `gator` CLI using the `go install` command:
+Install the `gator` CLI using the `go install` command (might not work if you dont use linux).:
 
 ```bash
 go install github.com/Lunnaris01/Blogregator/cmd/gator@latest
