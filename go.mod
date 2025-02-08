@@ -1,4 +1,4 @@
-module gator
+module github.com/Lunnaris01/Blogregator
 
 go 1.23.5
 
