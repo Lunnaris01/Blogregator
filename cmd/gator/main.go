@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gator/internal/config"
-	"gator/internal/commands"
-	"gator/internal/database"
+	"github.com/Lunnaris01/Blogregator/internal/config"
+	"github.com/Lunnaris01/Blogregator/internal/commands"
+	"github.com/Lunnaris01/Blogregator/internal/database"
 	"log"
 	"os"
 	"database/sql"
