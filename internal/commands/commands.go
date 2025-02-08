@@ -15,6 +15,7 @@ import (
 	"database/sql"
 	"github.com/google/uuid"
 	"strconv"
+	"strings"
 )
 
 // Define state for handlers
@@ -264,6 +265,45 @@ func HandlerFollowing(s *State, cmd Command, user database.User) error {
 	return nil
 }
 
+func HandlerExplorePosts(s *State, cmd Command, user database.User) error {
+	if len(cmd.Args) < 1 {
+		return errors.New("Please use a Limit on the amount of posts!")
+	}
+	limit, err := strconv.Atoi(cmd.Args[0])
+	if err != nil{
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	posts, err := s.Db.GetPostsWithFeedForUser(
+		context.Background(),
+		database.GetPostsWithFeedForUserParams{user.ID,int32(limit)})
+	if err != nil {
+		fmt.Printf("Failed to fetch Posts\n")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("These are the latest new Posts for User %s:\n", user.Name)
+	for _, post := range posts {
+		fmt.Printf("Feed %s: Posttitle: %s\n", post.Feedname, post.Title)
+	}
+	return nil
+}
+
+func HandlerPrintPosts(s *State, cmd Command) error {
+	posts, err := s.Db.GetPosts(context.Background())
+	if err != nil {
+		fmt.Printf("Failed to fetch Posts\n")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	for _, post := range posts{
+		fmt.Println(post)
+	}
+	return nil
+
+}
+
+
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	rssfeed := RSSFeed{}
@@ -354,9 +394,14 @@ func scrapeFeeds(s *State, cmd Command) error {
 	if err != nil {
 		return err
 	}
-	
-	printFeed(fetched_feed)
-	fmt.Println("Feed Updated")
+	fmt.Println("Updating the posts of the feed!")
+	fetched_feed.Channel.Link = feed.Url
+	err = savePosts(fetched_feed,s)
+	if err != nil{
+		fmt.Println(err)
+	}
+	//printFeed(fetched_feed)
+	fmt.Printf("Feed %s Updated\n",fetched_feed.Channel.Title)
 	return nil
 }
 
@@ -365,5 +410,51 @@ func printFeed(feed *RSSFeed){
 	for _, item := range feed.Channel.Item{
 		fmt.Printf("Title: %s\n",item.Title)
 		fmt.Printf("Description: %s\n",item.Description)
+		fmt.Println(item.PubDate)
 	}
+}
+func savePosts(feed *RSSFeed, s *State) error{
+	
+	var postContent database.AddPostParams
+	fmt.Println(feed.Channel.Link)
+	db_feed, err := s.Db.GetFeedByURL(context.Background(),feed.Channel.Link)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	for _, item := range feed.Channel.Item{
+		pubDate, err := parsePublishedDate(item.PubDate)
+		if err != nil {
+			return err
+		}	
+		postContent = database.AddPostParams {
+			ID:         	uuid.New(),
+			CreatedAt:  	time.Now(),
+			UpdatedAt:  	time.Now(),
+			Title:      	item.Title,
+			Url:        	item.Link,
+			Description:	item.Description,
+			PublishedAt: 	pubDate,
+			FeedID:      	db_feed.ID,
+		}
+		post,err := s.Db.AddPost(context.Background(),postContent)
+		if err != nil && !strings.Contains(err.Error(),"duplicate key"){		
+			// If it's not a unique constraint violation, handle it normally
+			fmt.Printf("Some other error occurred when saving post: %v\n", err)
+			return err
+		}
+		if err == nil {
+			fmt.Println("Added Post " + post.Title)
+		}
+	}
+	return nil
+}
+
+
+func parsePublishedDate(pubDate string)(time.Time, error){
+	new_time, err := time.Parse(time.RFC1123,strings.TrimSpace(pubDate))
+	if err != nil {
+		return time.Time{},err
+	}
+	return new_time, nil
 }
